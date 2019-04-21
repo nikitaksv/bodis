@@ -22,8 +22,6 @@ inters-settings:
   depguard:
     list-type: blacklist
     packages:
-      # logging is allowed only by logutils.Log, logrus
-      # is allowed to use only in logutils package
       - github.com/sirupsen/logrus
   misspell:
     locale: US
@@ -58,7 +56,5 @@ issues:
       linters:
         - gosec
 
-# golangci.com configuration
-# https://github.com/golangci/golangci/wiki/Configuration
 service:
-  golangci-lint-version: 1.15.x # use the fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.15.x

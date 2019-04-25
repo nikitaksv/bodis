@@ -6,10 +6,10 @@ type AuthData map[string]string
 
 type Storage interface {
 	Info() (Info, error)
-	ReadResource(path string) (Resource, error)
-	WriteResource(path string, data []byte) error
+	GetResourceInfo(path string) (ResourceInfo, error)
+	ReadResource(path string) ([]byte, error)
+	WriteResource(path string, resInfo ResourceInfo, data []byte) error
 	DeleteResource(path string) error
-	StateResource(path string)
 }
 
 type Info interface {
@@ -26,7 +26,8 @@ type Info interface {
 	IsRemote() bool
 }
 
-type Resource interface {
+type ResourceInfo interface {
+	Extension() string
 	Path() string
 	Name() string
 	IsDir() bool
@@ -35,10 +36,10 @@ type Resource interface {
 
 	Hash() string
 	Permissions() Permissions
-	Created() time.Duration
-	Modified() time.Duration
+	Created() time.Time
+	Modified() time.Time
 
-	ParentResource() *Resource
+	ParentResource() ResourceInfo
 }
 
 type Permissions interface {

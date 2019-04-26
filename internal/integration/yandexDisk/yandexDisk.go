@@ -13,8 +13,8 @@ type yandexDisk struct {
 	client yadisk.YaDisk
 }
 
-func NewYandexDisk(ctx context.Context, client http.Client, token string) *yandexDisk {
-	yadClient, err := yadisk.NewYaDisk(ctx, &client, &yadisk.Token{AccessToken: token})
+func NewYandexDisk(ctx context.Context, client *http.Client, token string) *yandexDisk {
+	yadClient, err := yadisk.NewYaDisk(ctx, client, &yadisk.Token{AccessToken: token})
 	if err != nil {
 		panic(err)
 	}
@@ -34,6 +34,10 @@ func (yd *yandexDisk) Info() (storage.Info, error) {
 }
 
 func (yd *yandexDisk) GetResourceInfo(path string) (storage.ResourceInfo, error) {
+	return nil, nil
+}
+
+func (yd *yandexDisk) getResourceInfo(path string) (*resourceInfo, error) {
 	res, err := yd.client.GetResource(path, nil, 10, 0, false, "", "size")
 	if err != nil {
 		if e, ok := err.(*yadisk.Error); ok {
@@ -41,8 +45,14 @@ func (yd *yandexDisk) GetResourceInfo(path string) (storage.ResourceInfo, error)
 		}
 		panic(err)
 	}
-	res.Embedded.Items
 
+	ri := newResourceInfo(yd, res.Path, res.Name, res.Type, res.Md5, res.Created, res.Modified, uint64(res.Size), nil, nil)
+	resources := make([]resourceInfo, len(res.Embedded.Items))
+	for i, v := range res.Embedded.Items {
+		resources[i] = *newResourceInfo(yd, v.Path, v.Name, v.Type, v.Md5, v.Created, v.Modified, uint64(v.Size), ri, nil)
+	}
+	ri.resources = resources
+	return ri, nil
 }
 
 func (yd *yandexDisk) ReadResource(path string) ([]byte, error) {

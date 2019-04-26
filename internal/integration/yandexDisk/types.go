@@ -6,11 +6,7 @@ import (
 	"time"
 
 	"github.com/nikitaksv/bodis/pkg/storage"
-
-	"github.com/nikitaksv/bodis/internal/integration"
 )
-
-var IntegrationKey integration.IntegrationKey = "yandexDisk"
 
 type diskInfo struct {
 	totalSpace      uint64
@@ -51,6 +47,8 @@ func (ydi *diskInfo) IsRemote() bool {
 }
 
 type resourceInfo struct {
+	client *yandexDisk
+
 	ext         string
 	path        string
 	name        string
@@ -61,10 +59,11 @@ type resourceInfo struct {
 	created     time.Time
 	modified    time.Time
 
-	parentResource resourceInfo
+	parentResource *resourceInfo
+	resources      []resourceInfo
 }
 
-func newResourceInfo(path, name, dir, hash, createdS, modifiedS string, size uint64, parentResource resourceInfo) *resourceInfo {
+func newResourceInfo(client *yandexDisk, path, name, dir, hash, createdS, modifiedS string, size uint64, parentResource *resourceInfo, resources []resourceInfo) *resourceInfo {
 	ext := filepath.Ext(name)
 	isDir := false
 	if dir == "dir" {
@@ -86,6 +85,7 @@ func newResourceInfo(path, name, dir, hash, createdS, modifiedS string, size uin
 	}
 
 	return &resourceInfo{
+		client:         client,
 		ext:            ext,
 		path:           path,
 		name:           name,
@@ -96,61 +96,79 @@ func newResourceInfo(path, name, dir, hash, createdS, modifiedS string, size uin
 		created:        created,
 		modified:       modified,
 		parentResource: parentResource,
+		resources:      resources,
 	}
 }
 
-func (ri *resourceInfo) Extension() string {
+func (ri resourceInfo) Extension() string {
 	return ri.ext
 }
 
-func (ri *resourceInfo) Path() string {
+func (ri resourceInfo) Path() string {
 	return ri.path
 }
 
-func (ri *resourceInfo) Name() string {
+func (ri resourceInfo) Name() string {
 	return ri.name
 }
 
-func (ri *resourceInfo) IsDir() bool {
+func (ri resourceInfo) IsDir() bool {
 	return ri.isDir
 }
 
-func (ri *resourceInfo) Size() uint64 {
+func (ri resourceInfo) Size() uint64 {
 	return ri.size
 }
 
-func (ri *resourceInfo) Hash() string {
+func (ri resourceInfo) Hash() string {
 	return ri.hash
 }
 
-func (ri *resourceInfo) Permissions() storage.Permissions {
+func (ri resourceInfo) Permissions() storage.Permissions {
 	return &ri.permissions
 }
 
-func (ri *resourceInfo) Created() time.Time {
+func (ri resourceInfo) Created() time.Time {
 	return ri.created
 }
 
-func (ri *resourceInfo) Modified() time.Time {
+func (ri resourceInfo) Modified() time.Time {
 	return ri.modified
 }
 
-func (ri *resourceInfo) ParentResource() storage.ResourceInfo {
-	return &ri.parentResource
+func (ri resourceInfo) ParentResource() storage.ResourceInfo {
+	return ri.parentResource
+}
+
+func (ri resourceInfo) Resources() []storage.ResourceInfo {
+	models := make([]storage.ResourceInfo, len(ri.resources))
+	for i, v := range ri.resources {
+		models[i] = resourceInfo(v)
+	}
+
+	if ri.isDir && len(models) == 0 {
+		newRi, err := ri.client.getResourceInfo(ri.path)
+		if err != nil {
+			return nil
+		}
+		if len(newRi.resources) == 0 {
+			return nil
+		}
+		newRi.parentResource = &ri
+		return newRi.Resources()
+	}
+
+	return models
 }
 
 // Owner has all rights.
 type permissions struct {
 }
 
-func (*permissions) IsWrite() bool {
+func (permissions) IsWrite() bool {
 	return true
 }
 
-func (*permissions) IsRead() bool {
-	return true
-}
-
-func (*permissions) IsDelete() bool {
+func (permissions) IsRead() bool {
 	return true
 }

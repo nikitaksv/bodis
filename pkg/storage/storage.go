@@ -40,12 +40,12 @@ type ResourceInfo interface {
 	Modified() time.Time
 
 	ParentResource() ResourceInfo
+	Resources() []ResourceInfo
 }
 
 type Permissions interface {
 	IsWrite() bool
 	IsRead() bool
-	IsDelete() bool
 }
 
 type State struct {

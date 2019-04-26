@@ -1,4 +1,4 @@
-github.com/nikitaksv/yandex-disk-sdk-go v1.0.0 h1:YLUH4H33myQf8CAcDisy8tKXVBaMSo95j8N0Bvdxh6Q=
-github.com/nikitaksv/yandex-disk-sdk-go v1.0.0/go.mod h1:QfOCihjDA/i6oH9vMub0B5SZwSgmYYTXnNuE7ziMqmA=
+github.com/nikitaksv/yandex-disk-sdk-go v1.0.1-0.20190426213145-876b4225de9e h1:qifAjJ7aj/kjbYCHHZw3mas2B2Y4MqTVs76hYxSVo2I=
+github.com/nikitaksv/yandex-disk-sdk-go v1.0.1-0.20190426213145-876b4225de9e/go.mod h1:QfOCihjDA/i6oH9vMub0B5SZwSgmYYTXnNuE7ziMqmA=
 github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967 h1:x7xEyJDP7Hv3LVgvWhzioQqbC/KtuUhTigKlH/8ehhE=
 github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967/go.mod h1:JGuDeoQd7Z6yL4zQhZ3OPEVHB7fL6Ka6skscFHfmt2k=

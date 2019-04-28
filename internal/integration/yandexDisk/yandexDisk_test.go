@@ -96,8 +96,8 @@ func Test_yandexDisk_getResourceInfo(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"file", fields{getYandexDisk()}, args{"/Горы.jpg"}, false},
-		{"directory", fields{getYandexDisk()}, args{"/Загрузки"}, false},
+		{"file", fields{getYandexDisk()}, args{"/test/forTest.docx"}, false},
+		{"directory", fields{getYandexDisk()}, args{"/test"}, false},
 		{"error", fields{getYandexDisk()}, args{"/nonexistentFile.jpg"}, true},
 	}
 	for _, tt := range tests {
@@ -115,12 +115,19 @@ func Test_yandexDisk_getResourceInfo(t *testing.T) {
 			if tt.name == "directory" {
 				res := got.Resources()
 				for _, rRes := range res {
-					if rRes.IsDir() {
+					if rRes.IsDir() && rRes.Name() == "sub" {
 						resD := rRes.Resources()
+						find := false
 						for _, rResd := range resD {
+							if rResd.Name() == "subForTest.docx" && !rResd.IsDir() {
+								find = true
+							}
 							if rResd.ParentResource() == nil {
 								t.Errorf("yandexDisk.getResourceInfo() parent resource not exists")
 							}
+						}
+						if !find {
+							t.Errorf("yandexDisk.getResourceInfo() subResource subForFile.docx not exists")
 						}
 					}
 				}

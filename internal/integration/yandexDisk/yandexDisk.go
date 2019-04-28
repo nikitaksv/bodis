@@ -6,6 +6,8 @@ import (
 
 	"github.com/nikitaksv/yandex-disk-sdk-go"
 
+	"github.com/nikitaksv/bodis/pkg/logger"
+
 	"github.com/nikitaksv/bodis/pkg/storage"
 )
 
@@ -34,13 +36,15 @@ func (yd *yandexDisk) Info() (storage.Info, error) {
 }
 
 func (yd *yandexDisk) GetResourceInfo(path string) (storage.ResourceInfo, error) {
-	return nil, nil
+	return yd.getResourceInfo(path)
 }
 
 func (yd *yandexDisk) getResourceInfo(path string) (*resourceInfo, error) {
-	res, err := yd.client.GetResource(path, nil, 10, 0, false, "", "size")
+	sugar := logger.Sugar()
+	res, err := yd.client.GetResource(path, nil, 100, 0, false, "", "size")
 	if err != nil {
 		if e, ok := err.(*yadisk.Error); ok {
+
 			return nil, e
 		}
 		panic(err)
@@ -56,7 +60,13 @@ func (yd *yandexDisk) getResourceInfo(path string) (*resourceInfo, error) {
 }
 
 func (yd *yandexDisk) ReadResource(path string) ([]byte, error) {
-	panic("implement me")
+	yd.client.GetResourceDownloadLink(path, nil)
+	if err != nil {
+		if e, ok := err.(*yadisk.Error); ok {
+			return nil, e
+		}
+		panic(err)
+	}
 }
 func (yd *yandexDisk) WriteResource(path string, data []byte) error {
 	panic("implement me")

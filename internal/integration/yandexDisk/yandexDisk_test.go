@@ -2,12 +2,11 @@ package yandexDisk
 
 import (
 	"context"
+	"github.com/nikitaksv/yandex-disk-sdk-go"
 	"net/http"
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/nikitaksv/yandex-disk-sdk-go"
 )
 
 func getYandexDisk() *yandexDisk {
@@ -131,6 +130,28 @@ func Test_yandexDisk_getResourceInfo(t *testing.T) {
 						}
 					}
 				}
+			}
+		})
+	}
+}
+
+func Test_convertPath(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"/", args{"/test/1.png"}, "disk:/test/1.png"},
+		{"without /", args{"test/1.png"}, "disk:/test/1.png"},
+		{"disk:/", args{"disk:/test/1.png"}, "disk:/test/1.png"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertPath(tt.args.path); got != tt.want {
+				t.Errorf("convertPath() = %v, want %v", got, tt.want)
 			}
 		})
 	}

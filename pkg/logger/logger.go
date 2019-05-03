@@ -3,7 +3,7 @@ package logger
 import (
 	"go.uber.org/zap"
 
-	"github.com/nikitaksv/bodis/pkg/storage"
+	"github.com/nikitaksv/bodis/pkg/errors"
 )
 
 func sync(zap *zap.Logger) {
@@ -15,12 +15,13 @@ func sync(zap *zap.Logger) {
 
 func Sugar() *zap.SugaredLogger {
 	logger, _ := zap.NewProduction()
-	defer sync(logger) // flushes buffer, if any
+	defer sync(logger)
 	return logger.Sugar()
 }
 
-func Error(err storage.Error) {
+func Error(err errors.Error) {
 	sugar := Sugar()
+	// TODO реализовать неймспейс
 	sugar.With(zap.Namespace())
 	sugar.Errorw(err.ErrorID(), zap.Any("description", err.Description()), zap.Any("params", err.Params()))
 }

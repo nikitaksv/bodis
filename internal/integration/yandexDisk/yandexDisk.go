@@ -1,15 +1,18 @@
 package yandexDisk
 
 import (
+	"bytes"
 	"context"
+	"github.com/nikitaksv/bodis/pkg/errors"
 	"net/http"
+	"strings"
 
 	"github.com/nikitaksv/yandex-disk-sdk-go"
 
-	"github.com/nikitaksv/bodis/pkg/logger"
-
 	"github.com/nikitaksv/bodis/pkg/storage"
 )
+
+var StorageKey = "yandexdisk"
 
 type yandexDisk struct {
 	client yadisk.YaDisk
@@ -18,36 +21,44 @@ type yandexDisk struct {
 func NewYandexDisk(ctx context.Context, client *http.Client, token string) *yandexDisk {
 	yadClient, err := yadisk.NewYaDisk(ctx, client, &yadisk.Token{AccessToken: token})
 	if err != nil {
-		panic(err)
+		panic(err) // fatal error
 	}
 
 	return &yandexDisk{client: yadClient}
 }
 
-func (yd *yandexDisk) Info() (storage.Info, error) {
+func (yd *yandexDisk) Info() (storage.Info, errors.Error) {
 	disk, err := yd.client.GetDisk([]string{"total_space", "max_file_size", "used_space"})
 	if err != nil {
 		if e, ok := err.(*yadisk.Error); ok {
-			return nil, e
+			return nil, newError(e.ErrorID, e.Description, map[string]map[string]interface{}{
+				"@Info()": {},
+			})
 		}
-		panic(err)
+		return nil, newError(errors.InternalSDK, err.Error(), map[string]map[string]interface{}{
+			"@Info()": {},
+		})
 	}
 	return newYandexDiskInfo(uint64(disk.TotalSpace), uint64(disk.UsedSpace), uint64(disk.MaxFileSize)), nil
 }
 
-func (yd *yandexDisk) GetResourceInfo(path string) (storage.ResourceInfo, error) {
-	return yd.getResourceInfo(path)
+func (yd *yandexDisk) GetResourceInfo(path string) (storage.ResourceInfo, errors.Error) {
+	return yd.getResourceInfo(convertPath(path))
 }
 
-func (yd *yandexDisk) getResourceInfo(path string) (*resourceInfo, error) {
-	sugar := logger.Sugar()
+func (yd *yandexDisk) getResourceInfo(path string) (*resourceInfo, errors.Error) {
+	path = convertPath(path)
+	// TODO Придумать как обойти limit и offset
 	res, err := yd.client.GetResource(path, nil, 100, 0, false, "", "size")
 	if err != nil {
 		if e, ok := err.(*yadisk.Error); ok {
-
-			return nil, e
+			return nil, newError(e.ErrorID, e.Description, map[string]map[string]interface{}{
+				"@GetResource()": {"path": path},
+			})
 		}
-		panic(err)
+		return nil, newError(errors.InternalSDK, err.Error(), map[string]map[string]interface{}{
+			"@GetResource()": {"path": path},
+		})
 	}
 
 	ri := newResourceInfo(yd, res.Path, res.Name, res.Type, res.Md5, res.Created, res.Modified, uint64(res.Size), nil, nil)
@@ -59,23 +70,93 @@ func (yd *yandexDisk) getResourceInfo(path string) (*resourceInfo, error) {
 	return ri, nil
 }
 
-func (yd *yandexDisk) ReadResource(path string) ([]byte, error) {
-	yd.client.GetResourceDownloadLink(path, nil)
+func (yd *yandexDisk) ReadResource(path string) ([]byte, errors.Error) {
+	path = convertPath(path)
+	_, err := yd.client.GetResourceDownloadLink(path, nil)
 	if err != nil {
 		if e, ok := err.(*yadisk.Error); ok {
-			return nil, e
+			return nil, newError(e.ErrorID, e.Description, map[string]map[string]interface{}{
+				"@GetResourceDownloadLink()": {"path": path},
+			})
 		}
-		panic(err)
+		return nil, newError(errors.InternalSDK, err.Error(), map[string]map[string]interface{}{
+			"@GetResourceDownloadLink()": {"path": path},
+		})
 	}
-}
-func (yd *yandexDisk) WriteResource(path string, data []byte) error {
+	// TODO придумать как скачивать файл. Возможно нужно реализовать в СДК
 	panic("implement me")
 }
 
-func (yd *yandexDisk) DeleteResource(path string) error {
-	panic("implement me")
+func (yd *yandexDisk) WriteResource(path string, resInfo storage.ResourceInfo, data *bytes.Buffer) errors.Error {
+	path = convertPath(path)
+	uploadLink, err := yd.client.GetResourceUploadLink(path, nil, true)
+	if err != nil {
+		if e, ok := err.(*yadisk.Error); ok {
+			return newError(e.ErrorID, e.Description, map[string]map[string]interface{}{
+				"@GetResourceUploadLink()": {"path": path, "data": map[string]interface{}{
+					"len": data.Len(),
+					"cap": data.Cap(),
+				}},
+			})
+		}
+		return newError(errors.InternalSDK, err.Error(), map[string]map[string]interface{}{
+			"@GetResourceUploadLink()": {"path": path, "data": map[string]interface{}{
+				"len": data.Len(),
+				"cap": data.Cap(),
+			}},
+		})
+	}
+	_, err = yd.client.PerformPartialUpload(uploadLink, data, calcPartSize(data.Len()))
+	if err != nil {
+		if e, ok := err.(*yadisk.Error); ok {
+			return newError(e.ErrorID, e.Description, map[string]map[string]interface{}{
+				"@PerformPartialUpload()": {"path": path, "data": map[string]interface{}{
+					"len": data.Len(),
+					"cap": data.Cap(),
+				}},
+			})
+		}
+		return newError(errors.InternalSDK, err.Error(), map[string]map[string]interface{}{
+			"@PerformPartialUpload()": {"path": path, "data": map[string]interface{}{
+				"len": data.Len(),
+				"cap": data.Cap(),
+			}},
+		})
+	}
+	return nil
 }
 
-func (yd *yandexDisk) StateResource(path string) {
-	panic("implement me")
+func (yd *yandexDisk) DeleteResource(path string) errors.Error {
+	path = convertPath(path)
+	_, err := yd.client.DeleteResource(path, nil, true, "", false)
+	if err != nil {
+		if e, ok := err.(*yadisk.Error); ok {
+			return newError(e.ErrorID, e.Description, map[string]map[string]interface{}{
+				"@DeleteResource()": {"path": path},
+			})
+		}
+		return newError(errors.InternalSDK, err.Error(), map[string]map[string]interface{}{
+			"@DeleteResource()": {"path": path},
+		})
+	}
+	return nil
+}
+
+func convertPath(path string) string {
+	if !strings.HasPrefix(path, "disk:/") {
+		if strings.HasPrefix(path, "/") {
+			path = "disk:" + path
+		} else {
+			path = "disk:/" + path
+		}
+	}
+	return path
+}
+
+func calcPartSize(dataLen int) int64 {
+	count := dataLen / int(yadisk.MaxFileUploadSize)
+	if count > 0 {
+		return int64(dataLen / count)
+	}
+	return int64(dataLen)
 }

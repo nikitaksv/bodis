@@ -2,6 +2,7 @@ package yandexDisk
 
 import (
 	"fmt"
+	"github.com/nikitaksv/bodis/pkg/errors"
 	"path/filepath"
 	"time"
 
@@ -171,4 +172,8 @@ func (permissions) IsWrite() bool {
 
 func (permissions) IsRead() bool {
 	return true
+}
+
+func newError(errorID string, description string, params map[string]map[string]interface{}) errors.Error {
+	return errors.NewBaseError(StorageKey, errorID, description, params)
 }

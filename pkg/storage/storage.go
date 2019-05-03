@@ -1,15 +1,20 @@
 package storage
 
-import "time"
+import (
+	"bytes"
+	"github.com/nikitaksv/bodis/pkg/errors"
+	"time"
+)
 
 type AuthData map[string]string
 
 type Storage interface {
-	Info() (Info, error)
-	GetResourceInfo(path string) (ResourceInfo, error)
-	ReadResource(path string) ([]byte, error)
-	WriteResource(path string, resInfo ResourceInfo, data []byte) error
-	DeleteResource(path string) error
+	Info() (Info, errors.Error)
+	GetResourceInfo(path string) (ResourceInfo, errors.Error)
+	//TODO возможно придется поменять сигнатуру.
+	ReadResource(path string) ([]byte, errors.Error)
+	WriteResource(path string, resInfo ResourceInfo, data *bytes.Buffer) errors.Error
+	DeleteResource(path string) errors.Error
 }
 
 type Info interface {

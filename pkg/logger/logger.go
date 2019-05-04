@@ -22,6 +22,7 @@ func Sugar() *zap.SugaredLogger {
 
 func StorageError(err storage.Error, sugar *zap.SugaredLogger) {
 	sugar.Errorw(err.ErrorID(),
+		zap.String("storageKey", string(err.StorageKey())),
 		zap.Any("description", err.Description()),
 		zap.Any("params", err.Params()),
 	)

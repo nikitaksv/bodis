@@ -3,10 +3,12 @@ package logger
 import (
 	"go.uber.org/zap"
 
-	"github.com/nikitaksv/bodis/pkg/errors"
+	"github.com/nikitaksv/bodis/pkg/config"
+
+	"github.com/nikitaksv/bodis/pkg/storage"
 )
 
-func sync(zap *zap.Logger) {
+func sync(zap *zap.SugaredLogger) {
 	err := zap.Sync()
 	if err != nil {
 		panic(err)
@@ -15,13 +17,21 @@ func sync(zap *zap.Logger) {
 
 func Sugar() *zap.SugaredLogger {
 	logger, _ := zap.NewProduction()
-	defer sync(logger)
 	return logger.Sugar()
 }
 
-func Error(err errors.Error) {
-	sugar := Sugar()
-	// TODO реализовать неймспейс
-	sugar.With(zap.Namespace())
-	sugar.Errorw(err.ErrorID(), zap.Any("description", err.Description()), zap.Any("params", err.Params()))
+func StorageError(err storage.Error, sugar *zap.SugaredLogger) {
+	sugar.Errorw(err.ErrorID(),
+		zap.Any("description", err.Description()),
+		zap.Any("params", err.Params()),
+	)
+}
+
+func ConfigFileError(err *config.FileError, sugar *zap.SugaredLogger) {
+	sugar.Errorw(err.Message,
+		zap.String("filepath", err.FilePath),
+		zap.String("key", err.Key),
+		zap.String("value", err.Value),
+		zap.String("line", string(err.Line)),
+	)
 }

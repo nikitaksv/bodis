@@ -1,12 +1,13 @@
-package yandexDisk
+package yandexdisk
 
 import (
 	"context"
-	"github.com/nikitaksv/yandex-disk-sdk-go"
 	"net/http"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/nikitaksv/yandex-disk-sdk-go"
 )
 
 func getYandexDisk() *yandexDisk {
@@ -36,18 +37,18 @@ func TestNewYandexDisk(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.want != nil {
-				if got := NewYandexDisk(tt.args.ctx, tt.args.client, tt.args.token); !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("NewYandexDisk() = %v, want %v", got, tt.want)
+				if got := New(tt.args.ctx, tt.args.client, tt.args.token); !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("New() = %v, want %v", got, tt.want)
 				}
 			} else {
 				defer func() {
 					if r := recover().(error); r != nil {
 						if r.Error() != "required token" {
-							t.Errorf("NewYandexDisk() panic = %v", r)
+							t.Errorf("New() panic = %v", r)
 						}
 					}
 				}()
-				_ = NewYandexDisk(tt.args.ctx, tt.args.client, tt.args.token)
+				_ = New(tt.args.ctx, tt.args.client, tt.args.token)
 			}
 
 		})
@@ -68,15 +69,15 @@ func Test_yandexDisk_Info(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			defer func() {
 				if r := recover(); r != nil {
-					t.Errorf("yandexDisk.Info() panic = %v", r)
+					t.Errorf("yandexdisk.Info() panic = %v", r)
 				}
 			}()
 			got, err := tt.fields.yd.Info()
 			if err != nil {
-				t.Errorf("yandexDisk.Info() error = %v", err)
+				t.Errorf("yandexdisk.Info() error = %v", err)
 			}
 			if got == new(diskInfo) {
-				t.Errorf("yandexDisk.Info() empty info")
+				t.Errorf("yandexdisk.Info() empty info")
 			}
 		})
 	}
@@ -105,11 +106,11 @@ func Test_yandexDisk_getResourceInfo(t *testing.T) {
 			yd := tt.fields.yd
 			got, err := yd.getResourceInfo(tt.args.path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("yandexDisk.getResourceInfo() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("yandexdisk.getResourceInfo() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got == new(resourceInfo) {
-				t.Errorf("yandexDisk.getResourceInfo() empty info")
+				t.Errorf("yandexdisk.getResourceInfo() empty info")
 			}
 			if tt.name == "directory" {
 				res := got.Resources()
@@ -122,11 +123,11 @@ func Test_yandexDisk_getResourceInfo(t *testing.T) {
 								find = true
 							}
 							if rResd.ParentResource() == nil {
-								t.Errorf("yandexDisk.getResourceInfo() parent resource not exists")
+								t.Errorf("yandexdisk.getResourceInfo() parent resource not exists")
 							}
 						}
 						if !find {
-							t.Errorf("yandexDisk.getResourceInfo() subResource subForFile.docx not exists")
+							t.Errorf("yandexdisk.getResourceInfo() subResource subForFile.docx not exists")
 						}
 					}
 				}

@@ -3,8 +3,10 @@ package config
 var configInstance *TomlConfig
 
 type TomlConfig struct {
-	Main
-	YandexDisk
+	Main    Main
+	Storage struct {
+		YandexDisk YandexDisk
+	}
 }
 
 type Main struct {

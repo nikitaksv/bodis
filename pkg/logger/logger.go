@@ -30,9 +30,9 @@ func StorageError(err storage.Error, sugar *zap.SugaredLogger) {
 
 func ConfigFileError(err *config.FileError, sugar *zap.SugaredLogger) {
 	sugar.Errorw(err.Message,
+		zap.String("line", string(err.Line)),
 		zap.String("filepath", err.FilePath),
 		zap.String("key", err.Key),
 		zap.String("value", err.Value),
-		zap.String("line", string(err.Line)),
 	)
 }
